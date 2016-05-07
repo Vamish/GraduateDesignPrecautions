@@ -100,7 +100,7 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
   "sheetNameList": null
 }
 ```
-其中```javascript isMultiSheet ``` 为```javascript false```，系统会直接跳转到数据展示页面。
+其中```isMultiSheet``` 为```false```，系统会直接跳转到数据展示页面。
 
 若所传文件含有多张表单则返回JSON 如下所示：
 ```javascript
@@ -123,16 +123,83 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
   ]
 }
 ```
-其中```javascript isMultiSheet ``` 为```javascript true```，此时系统会将返回的```javascript sheetNameList ```填充到下拉框中让用户选择。系统运行截图如下：
+其中```isMultiSheet```为```true```，此时系统会将返回的```sheetNameList```填充到下拉框中让用户选择。系统运行截图如下：
 ![multiinfo-isMultiSheet](img/multiinfo-isMultiSheet.jpg)
+在用户选择待分析的表单后，页面跳转到数据展示页面。
 
+### 3.2 变量选择规则设计与参数传值设定
+变量选择是本系统中的一个重点，在实践中我们总结了变量选择的几种规则，并把这几种选择规则统一成一个规则控制文件variableRule.js，由这个规则控制文件来决定用户选择变量的个数及方式。
+variableRule.js 的具体实现逻辑如下：
+```javascript
+var variableRule = function () {
+    //变量选择规则 - 普通型
+    $('[data-variable-select-rule="normal"]').each(function () {
+        $(this).find('.variable-wrapper').on('click', function (e) {
+            if (!$(this).attr('disabled')) {
+                $(this).toggleClass('active');
+            }
+        });
+    });
 
-通过该JSON 的数据提示，若```javascript isMultiSheet```为```javascript false```，则直接跳到数据展示页面。若有多个表单的情况，则应该弹出选择框让用户选择要处理的表单
+    //变量选择规则 - 连续选择型
+    $('[data-variable-select-rule="consequent"]').each(function () {
 
-【TODO】一张截图
+        var variableList = {};
+        $(this).find('.variable-wrapper').map(function (i, elem) {
+            variableList[$(elem).index()] = $(elem);
+        });
+        var variablesIndex = Object.keys(variableList);
+        var _variablesIndex = Object.keys(variableList).reverse();
 
-### 3.2 变量选择规则与参数传值设定
-变量选择是本系统中的一个重点，能否取到
+        $(this).find('.variable-wrapper').on('click', function () {
+            //选择该变量之前的所有变量
+            for (var i = variablesIndex[0]; i < $(this).index(); i++) {
+                $(variableList[i]).addClass('active');
+            }
+            //取消该变量之后的所有变量
+            for (var j = _variablesIndex[0]; j > $(this).index(); j--) {
+                $(variableList[j]).removeClass('active');
+            }
+
+        });
+    });
+
+    //变量选择规则 - 单选变量型
+    $('[data-variable-select-rule="single"]').each(function () {
+
+        var that = this;
+        $(this).find('.variable-wrapper').on('click', function () {
+            //取消之前选择的
+            if (!$(this).attr('disabled')) {
+                $(that).find('.variable-wrapper').removeClass('active');
+                $(this).addClass('active');
+            }
+        });
+    });
+
+    //变量选择规则 - 组合型
+    if ($('[data-variable-select-group]')) {
+        var groupList = $('[data-variable-select-group]').attr('data-variable-select-group').split(',');
+
+        $('[data-group-name=' + groupList[0] + ']').on('click', '.variable-wrapper', function (e) {
+            e.stopPropagation();
+            $('[data-group-name=' + groupList[0] + ']').find('.variable-wrapper').map(function (index, variable) {
+                $('[data-group-name=' + groupList[1] + ']').find('[data-toggle-select=' + $(variable).attr('data-toggle-select') + ']')
+                    .attr('disabled', ($(this).hasClass('active')) ? true : false);
+            });
+        });
+
+        $('[data-group-name=' + groupList[1] + ']').on('click', '.variable-wrapper', function (e) {
+            e.stopPropagation();
+            $('[data-group-name=' + groupList[1] + ']').find('.variable-wrapper').map(function (index, variable) {
+                $('[data-group-name=' + groupList[0] + ']').find('[data-toggle-select=' + $(variable).attr('data-toggle-select') + ']')
+                    .attr('disabled', ($(this).hasClass('active')) ? true : false);
+            });
+        });
+    }
+};
+```
+通过定义变量选择区域的data-variable-select-rule 自定义属性，系统可以分别对设置属性的区域进行变量选择控制。
 
 ### 3.3 本地配置存储
 以『描述统计』功能中的『描述性』功能为例。在用户点击菜单中的相应菜单项是，系统会弹出如下框体：
