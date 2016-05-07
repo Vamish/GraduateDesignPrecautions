@@ -48,9 +48,13 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
 
 【TODO】这里应该有个图
 
-在用户使用本系统的过程中我们发现，绝大部分用户上传的数据文件为xls/xlsx 格式，在上传文件只有单一sheet的情况下，系统会直接跳转到该数据的数据展示页面并展示该数据。但由于Microsoft Office 套件在新建Excel 文档时默认会有sheet1 - sheet3 三个表单，而用户在本系统中分析的数据一般只有一个表单，所以我们在用户上传文件的时候会优先让用户选择要分析的表单，再对这个表单进行操作。这样一来，不仅用户不会因为操作到无关的表单而产生无效、干扰的数据结果，系统在处理相对应的表单的时候也能能快速高效的获取用户所选择、输入的值。
+#### 2.2.1 数据上传
+在用户使用本系统的过程中我们发现，绝大部分用户上传的数据文件为xls/xlsx 格式。在上传文件只有单一sheet或者非xls/xlsx格式的情况下，系统会直接跳转到该数据的数据展示页面并展示该数据。但由于Microsoft Office 套件在新建Excel 文档时默认会有sheet1 - sheet3 三个表单，而用户在本系统中分析的数据一般只有一个表单，所以我们在用户上传文件的时候会优先让用户选择要分析的表单，再对这个表单进行操作。这样一来，不仅用户不会因为操作到无关的表单而产生无效、干扰的数据结果，系统在处理相对应的表单的时候也能能快速高效的获取用户所选择、输入的值。
 
 并且在优化用户交互体验方面，为了防止用户在选择表单的时候由于失误选错了表单，本系统会提供了在数据展示页面动态切换表单的功能。
+
+#### 2.2.2 变量与配置选择
+在实践中我们注意到，用户选择的数据配置并不会影响到后端功能的计算。于是，本系统采用的方式是在前端部分保存用户选择的参数信息，后台返回所有关于该功能计算后的值，再由前端部分根据用户选择的参数信息将制定的参数打印、显示。这样可以减少了后端的判断量，使系统能加轻便。
 
 ### 2.3 前端框架设计与数据对接模块设计
 本系统功能繁多，而且各个功能之间的相关参数并没有复用的必要性。每个功能的传参都有独立的控件分别控制。因为每个功能间的参数、配置选择都是相互独立的。在本系统内应用的框架模式是在原有Bootstrap 样式框架的基础上，分功能设定出每个功能的弹框页面，并在该HTML 页面内应该有该功能逻辑的相关控制方法。并且由于功能点与可允许用户操作的菜单是一一对应的关系，通过这些功能所在的路径，定义好菜单的JSON 格式的配置文件，用户访问数据展示页面的页面上打印出可以让用户操作的菜单栏。
@@ -76,15 +80,51 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
 在系统设计时决定的前后台分离使系统的逻辑框架更为清晰。笔者在项目中主要负责前端部分，下面将主要讲解前端部分的功能实现。
 
 ### 3.1 本地配置存储
+以『描述统计』功能中的『描述』功能为例。在用户点击菜单中的相应菜单项是，系统会弹出如下框体：
+![multiinfo-modal]()
 
 ### 3.2 数据文档上传
 本系统现在支持四种数据文档格式的文件，分别是.xls，.xlsx，.dat，.txt。前端的主要职责是在用户选择文件后，并在上传之前判断该文件格式符不符合前文提到的四种文件格式，若不符合规范，应该在用户上传之前有相应的警告，并且提示用户上传正确格式的文件。
 
 【TODO】一张用户上传文件失败的运行截图
 
-若文件上传成功，后台会返回相应的JSON数据格式，如下图所示
+若文件上传成功，后台会返回相应的JSON数据格式，返回结果有两种。若所传文件含有多张表单则返回JSON 如下所示：
+```javascript
+{
+  "ret_code": "0",
+  "ret_msg": "",
+  "ret_err": "",
+  "token": "C321A1DA295CBDDF4B8ED482BE09ACF4",
+  "createTime": 56980719414133,
+  "isMultiSheet": true,
+  "fileName": "Sample_data.xls",
+  "sheetNum": 5,
+  "version": "2003",
+  "sheetNameList": [
+    "NingXia 10 Indicators in 85-08",
+    "Hunan 12 Indecators in 88-06",
+    "2004 CN consume composing",
+    "2004 CN Town Family Situation",
+    "West CN GDP 85-04 Per Captia "
+  ]
+}
+```
+若所传文件的返回结果只有单张表单，则返回JSON 如下所示：
+```javascript
+{
+  "ret_code": "0",
+  "ret_msg": "",
+  "ret_err": "",
+  "token": "40E3884605BDC6EBBECBFCD144EA5C2E",
+  "createTime": 57271883002276,
+  "isMultiSheet": false,
+  "fileName": null,
+  "sheetNum": 0,
+  "version": null,
+  "sheetNameList": null
+}
+```
 
-【TODO】两张接口JSON 图，一张isMultiSheet=true,一张false
 
 通过该JSON 的数据提示，若isMultiSheet=false，则直接跳到数据展示页面。若有多个表单的情况，则应该弹出选择框让用户选择要处理的表单
 
@@ -95,39 +135,39 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
 
 其逻辑如下：
 ```javascript
-    var i18n = function () {
-        //多语言配置
-        var lang = (localStorage.getItem("MULTIINFO_CONFIG_LANGUAGE")) ?
-            localStorage.getItem("MULTIINFO_CONFIG_LANGUAGE") :
-            "zh-cn";
+var i18n = function () {
+    //多语言配置
+    var lang = (localStorage.getItem("MULTIINFO_CONFIG_LANGUAGE")) ?
+        localStorage.getItem("MULTIINFO_CONFIG_LANGUAGE") :
+        "zh-cn";
 
-        var CONFIG_LANG_STRING = sessionStorage.getItem('PRIVATE_CONFIG_LANGUAGE_STRINGS');
+    var CONFIG_LANG_STRING = sessionStorage.getItem('PRIVATE_CONFIG_LANGUAGE_STRINGS');
 
-        if (CONFIG_LANG_STRING) {
+    if (CONFIG_LANG_STRING) {
+        $('[data-i18n-tag]').each(function () {
+            var String = JSON.parse(CONFIG_LANG_STRING);
+
+            var that = this;
+            $(that).html(String[$(that).attr('data-i18n-type')][lang][$(that).attr('data-i18n-tag')]);
+        });
+    } else {
+        $.getJSON('js/config/String.json', function (String) {
+            sessionStorage.setItem('PRIVATE_CONFIG_LANGUAGE_STRINGS', JSON.stringify(String));
             $('[data-i18n-tag]').each(function () {
-                var String = JSON.parse(CONFIG_LANG_STRING);
-
                 var that = this;
                 $(that).html(String[$(that).attr('data-i18n-type')][lang][$(that).attr('data-i18n-tag')]);
             });
-        } else {
-            $.getJSON('js/config/String.json', function (String) {
-                sessionStorage.setItem('PRIVATE_CONFIG_LANGUAGE_STRINGS', JSON.stringify(String));
-                $('[data-i18n-tag]').each(function () {
-                    var that = this;
-                    $(that).html(String[$(that).attr('data-i18n-type')][lang][$(that).attr('data-i18n-tag')]);
-                });
-            });
-        }
-    };
+        });
+    }
+};
 ```
-
-【TODO】i18n逻辑代码
 
 在用户第一次使用本系统的时候，因为没有相关的语言选项，默认为中文。用户可以在上传数据的页面右上角的『设置』中找到切换语言的菜单项。点击相对应的语言即可进行切换。
 中遇到的需要切换多语言的情况
+![multiinfo-language](img/multiinfo-language.jpg)
 
-### 3.4 变量选择规则
+### 3.4 变量选择规则与参数传值设定
+变量选择是本系统中的一个重点，能否取到
 
 ### 3.4 数据展示
 
