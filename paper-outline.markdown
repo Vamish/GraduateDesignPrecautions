@@ -79,16 +79,30 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
 ## 三、系统主要功能实现
 在系统设计时决定的前后台分离使系统的逻辑框架更为清晰。笔者在项目中主要负责前端部分，下面将主要讲解前端部分的功能实现。
 
-### 3.1 本地配置存储
-以『描述统计』功能中的『描述』功能为例。在用户点击菜单中的相应菜单项是，系统会弹出如下框体：
-![multiinfo-modal]()
-
-### 3.2 数据文档上传
+### 3.1 数据文档上传
 本系统现在支持四种数据文档格式的文件，分别是.xls，.xlsx，.dat，.txt。前端的主要职责是在用户选择文件后，并在上传之前判断该文件格式符不符合前文提到的四种文件格式，若不符合规范，应该在用户上传之前有相应的警告，并且提示用户上传正确格式的文件。
 
 【TODO】一张用户上传文件失败的运行截图
 
-若文件上传成功，后台会返回相应的JSON数据格式，返回结果有两种。若所传文件含有多张表单则返回JSON 如下所示：
+若文件上传成功，后台会返回相应的JSON数据格式，返回结果有两种。
+若所传文件的返回结果只有单张表单，则返回JSON 如下所示：
+```javascript
+{
+  "ret_code": "0",
+  "ret_msg": "",
+  "ret_err": "",
+  "token": "40E3884605BDC6EBBECBFCD144EA5C2E",
+  "createTime": 57271883002276,
+  "isMultiSheet": false,
+  "fileName": null,
+  "sheetNum": 0,
+  "version": null,
+  "sheetNameList": null
+}
+```
+其中```javascript isMultiSheet ``` 为```javascript false```，系统会直接跳转到数据展示页面。
+
+若所传文件含有多张表单则返回JSON 如下所示：
 ```javascript
 {
   "ret_code": "0",
@@ -109,26 +123,22 @@ AJAX即“Asynchronous JavaScript and XML”（异步的JavaScript与XML技术�
   ]
 }
 ```
-若所传文件的返回结果只有单张表单，则返回JSON 如下所示：
-```javascript
-{
-  "ret_code": "0",
-  "ret_msg": "",
-  "ret_err": "",
-  "token": "40E3884605BDC6EBBECBFCD144EA5C2E",
-  "createTime": 57271883002276,
-  "isMultiSheet": false,
-  "fileName": null,
-  "sheetNum": 0,
-  "version": null,
-  "sheetNameList": null
-}
-```
+其中```javascript isMultiSheet ``` 为```javascript true```，此时系统会将返回的```javascript sheetNameList ```填充到下拉框中让用户选择。系统运行截图如下：
+![multiinfo-isMultiSheet](img/multiinfo-isMultiSheet.jpg)
 
 
-通过该JSON 的数据提示，若isMultiSheet=false，则直接跳到数据展示页面。若有多个表单的情况，则应该弹出选择框让用户选择要处理的表单
+通过该JSON 的数据提示，若```javascript isMultiSheet```为```javascript false```，则直接跳到数据展示页面。若有多个表单的情况，则应该弹出选择框让用户选择要处理的表单
 
 【TODO】一张截图
+
+### 3.2 变量选择规则与参数传值设定
+变量选择是本系统中的一个重点，能否取到
+
+### 3.3 本地配置存储
+以『描述统计』功能中的『描述性』功能为例。在用户点击菜单中的相应菜单项是，系统会弹出如下框体：
+![multiinfo-modal](img/multiinfo-modal.jpg)
+系统将框体分为两部分，上半部分为用户选择的参数列表，下半部分的『选项』为待本地存储的配置参数项。
+
 
 ### 3.2 多语言切换
 设计中提到的多语言配置的控制器i18n.js，其名称来源于internationalization（国际化），因首字母i与末字母n中间隔了18个字母，故缩写为i18n。
@@ -165,9 +175,6 @@ var i18n = function () {
 在用户第一次使用本系统的时候，因为没有相关的语言选项，默认为中文。用户可以在上传数据的页面右上角的『设置』中找到切换语言的菜单项。点击相对应的语言即可进行切换。
 中遇到的需要切换多语言的情况
 ![multiinfo-language](img/multiinfo-language.jpg)
-
-### 3.4 变量选择规则与参数传值设定
-变量选择是本系统中的一个重点，能否取到
 
 ### 3.4 数据展示
 
